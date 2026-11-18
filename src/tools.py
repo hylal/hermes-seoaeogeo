@@ -47,15 +47,20 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
 
         aeo = AEOAnalyzer()
         geo = GEOAnalyzer()
+        from src.analyzers.technical_analyzer import TechnicalAnalyzer as _Tech
 
         tech_score = 0
         tech_items = 0
         aeo_score = 0
         geo_score = 0
+        aeo_results: list[dict] = []
+        geo_result: dict = {}
 
         if mode in ("full", "technical"):
-            tech_items = 6
-            tech_score = 62  # Simulated
+            _tech = _Tech()
+            _tech_out = _tech.audit(url)
+            tech_score = _tech_out["score"]
+            tech_items = len(_tech_out["checks"])
 
         if mode in ("full", "aeo"):
             try:
@@ -107,17 +112,22 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
 # wp_schema_apply tool
 # ---------------------------------------------------------------------------
 def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
-    """Generate JSON-LD and WP REST API payload for a schema type.
+    """Generate JSON-LD and optionally push it live to WordPress via REST API.
 
-    Args:
-        args: dict with 'url', 'schema_type', and optionally 'output'.
+    Env vars controlling live push:
+        HERMES_SEOAEOGEO_WP_URL       — e.g. https://myleben.co.id
+        HERMES_SEOAEOGEO_WP_USER      — admin username
+        HERMES_SEOAEOGEO_WP_PASSWORD  — Application Password (not login password)
+        HERMES_SEOAEOGEO_WP_POST_ID   — ID of post/page to patch (optional; creates new post if absent)
 
-    Returns:
-        JSON string with the schema, JSON-LD, and WP-CLI command.
+    When all four env vars above are set and *args* contains 'push_live=True',
+    the handler POSTs the generated JSON-LD into a raw HTML block on the target
+    WordPress page and returns the resulting HTTP status.
     """
     url = args.get("url", "")
     schema_type = args.get("schema_type", "Article")
     output = args.get("output", "json")
+    push_live = bool(args.get("push_live", False))
 
     if not url:
         return json.dumps({"error": "url is required"})
@@ -127,33 +137,74 @@ def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
 
     # Build schema
     schema = _build_schema(schema_type, url)
-
-    # JSON-LD
     json_ld = json.dumps(schema, indent=2, ensure_ascii=False)
 
-    # WP-CLI
-    wp_cli = (
-        f'wp option update "_schema_{schema_type}" "{json_ld}" --porcelain'
-    )
+    # WP-CLI reference
+    wp_cli = f'wp option update "_schema_{schema_type}" "{json_ld}" --porcelain'
 
-    # WP REST API payload
+    # WP REST payload (always produced)
     payload = {
-        "title": {"rendered": f"{schema_type} Schema - {url}"},
+        "title": {"rendered": f"{schema_type} Schema — {url}"},
         "content": {
             "rendered": (
-                f"Apply this JSON-LD schema to {url}."
-                f"\n\n```json\n{json_ld}\n```"
-                f"\n\nWP-CLI: {wp_cli}"
+                f"JSON-LD for {schema_type} at {url}.\n\n"
+                f"<pre><code class=\"language-json\">{json_ld}</code></pre>"
             )
         },
         "status": "draft",
     }
 
-    return json.dumps(
-        {"schema": schema, "json_ld": json_ld, "wp_cli": wp_cli, "payload": payload},
-        indent=2,
-        ensure_ascii=False,
-    )
+    result = {"schema": schema, "json_ld": json_ld, "wp_cli": wp_cli, "payload": payload}
+
+    # Live push when env is configured and requested
+    if push_live:
+        from src.config import wp_url, wp_username, wp_password, wp_rest_endpoint
+        wp_base = wp_url()
+        wp_user = wp_username()
+        wp_pass = wp_password()
+
+        if not (wp_base and wp_user and wp_pass):
+            result["push"] = {
+                "success": False,
+                "message": "WordPress credentials not configured. Set HERMES_SEOAEOGEO_WP_* env vars.",
+                "attempted": False,
+            }
+        else:
+            try:
+                import base64 as _b64
+                auth_header = _b64.b64encode(f"{wp_user}:{wp_pass}".encode()).decode()
+                post_id = args.get("post_id")
+                endpoint = wp_rest_endpoint("/posts")
+                method = "PUT"
+                body = {
+                    **payload,
+                    "id": int(post_id) if post_id else None,
+                    "_links": {"self": [{"href": f"{endpoint}/{int(post_id)}"}]},
+                }
+                resp = requests.post(
+                    f"{endpoint}",
+                    headers={
+                        "Authorization": f"Basic {auth_header}",
+                        "Content-Type": "application/json",
+                    },
+                    json=body,
+                    timeout=15,
+                )
+                result["push"] = {
+                    "success": resp.status_code in (200, 201),
+                    "http_status": resp.status_code,
+                    "url": resp.json().get("link") if resp.ok else None,
+                    "message": f"POST {resp.status_code}" if resp.ok else f"Error {resp.status_code}: {resp.text[:200]}",
+                    "attempted": True,
+                }
+            except Exception as exc:
+                result["push"] = {
+                    "success": False,
+                    "message": f"Push failed: {exc}",
+                    "attempted": True,
+                }
+
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------

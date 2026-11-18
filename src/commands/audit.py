@@ -43,34 +43,24 @@ def audit_url(
     # Initialize analyzers
     geo = GEOAnalyzer()
     aeo = AEOAnalyzer()
-    tech_score = 0
-    tech_items = 0
+    tech_result: dict = {"score": 0, "checks": [], "details": {}}
 
     if mode in ("full", "technical"):
-        # Simulate technical audit tables
-        tech_data = [
-            ("HTTPS", "Not configurable — check server", "warn"),
-            ("Meta description", "Present", "ok"),
-            ("Title tag", "Too short (< 50 chars)", "warn"),
-            ("Headings hierarchy", "H1–H6 found: 4", "ok"),
-            ("Image alt attributes", "0 of 12 tagged", "error"),
-            ("Structured data", "No JSON-LD found", "warn"),
-        ]
-        table = Table(title="Technical Audit", show_header=True, header_style="bold magenta")
+        from src.analyzers.technical_analyzer import TechnicalAnalyzer
+        tech = TechnicalAnalyzer()
+        tech_result = tech.audit(url)
+
+        table = Table(title="Technical Audit Checklist", show_header=True, header_style="bold magenta")
         table.add_column("Check", style="cyan")
         table.add_column("Finding", style="white")
         table.add_column("Status", style="yellow")
 
-        status_style = {
-            "ok": "green",
-            "warn": "yellow",
-            "error": "red",
-        }
-        for name, finding, status in tech_data:
-            table.add_row(name, finding, f"[{status_style.get(status, 'white')}] {status.upper()} [/]")
+        _status_color = {"ok": "green", "warn": "yellow", "error": "red"}
+        for ch in tech_result["checks"]:
+            color = _status_color.get(ch["status"], "white")
+            table.add_row(ch["check"], ch["finding"], f"[{color}]{ch['status'].upper()}[/]")
 
         console.print(table)
-        tech_score = 62  # simulated
 
     if mode in ("full", "aeo"):
         # Run AEO analyzer on the URL
@@ -107,13 +97,30 @@ def audit_url(
 
         console.print(geo_table)
 
-    # Compile final result
+    # Compile final result — weighted blend of tech/AEO/geo scores
+    tech_score_val = tech_result.get("score", 0)
+    try:
+        aeo_opps = aeo.extract_paa_opportunities(url) if mode in ("full", "aeo") else []
+        aeo_score = round(sum(o["confidence"] for o in aeo_opps) / max(len(aeo_opps), 1))
+    except Exception:
+        aeo_opps = []
+        aeo_score = 0
+
+    if mode == "technical":
+        overall = tech_score_val
+    elif mode == "aeo":
+        overall = aeo_score
+    elif mode == "geo":
+        overall = geo_result.get("score", 0) if isinstance(geo_result, dict) else 0
+    else:
+        overall = round(tech_score_val * 0.4 + aeo_score * 0.3 + (geo_result.get("score", 0) * 0.3))
+
     result = AuditResult(
         url=url,
         mode=mode,
-        overall_score=72,
-        technical={"checks": 6, "score": tech_score},
-        aeo={"opportunities": len(opportunities), "score": aeo_score},
+        overall_score=overall,
+        technical={"checks": len(tech_result.get("checks", [])), "score": tech_score_val},
+        aeo={"opportunities": len(aeo_opps), "score": aeo_score},
         geo=geo_result,
         recommendations=geo_result["recommendations"],
         errors=[],
@@ -123,10 +130,10 @@ def audit_url(
     summary_table = Table(show_header=False, box=None)
     summary_table.add_column("Key", style="dim")
     summary_table.add_column("Value", style="bold")
-    summary_table.add_row("Overall SEO/AEO/GEO Score", f"[bold]{result.overall_score}/100[/]")
-    summary_table.add_row("AEO Opportunities", str(result.aeo["opportunities"]))
-    summary_table.add_row("GEO Signals", str(len(result.geo["signals"])))
-    summary_table.add_row("Technical Checks", str(result.technical["checks"]))
+    summary_table.add_row("Technical Score", f"[bold]#{result.technical['score']}/100[/]")
+    summary_table.add_row("AEO Score", f"{result.aeo['score']}/100 ({result.aeo['opportunities']} opps)")
+    summary_table.add_row("GEO Signals", str(len(result.geo.get("signals", []) if isinstance(result.geo, dict) else [])))
+    summary_table.add_row("Total Checks Run", str(result.technical["checks"]))
 
     console.print("\n[bold]Summary[/bold]")
     console.print(summary_table)

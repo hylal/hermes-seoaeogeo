@@ -1,0 +1,39 @@
+name: hermes-seoaeogeo-ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv pip install --system -e ".[dev]"
+
+      - name: Run linting (ruff)
+        run: ruff check src/ tests/
+
+      - name: Run type check (basic)
+        run: |
+          python -c "import ast; [ast.parse(open(p).read()) for p in ['src/main.py','src/_registry.py','src/models.py','src/schemas.py','src/tools.py','src/config.py','src/cache.py','src/commands/audit.py','src/commands/wp_fix.py','src/commands/aeo.py','src/commands/geo.py','src/analyzers/technical_analyzer.py','src/analyzers/aeo_analyzer.py','src/analyzers/geo_analyzer.py']]; print('Syntax OK')"
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
