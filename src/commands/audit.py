@@ -1,4 +1,4 @@
-"""CLI commands for the hermes-seoaedgeo plugin — audit subcommand."""
+"""CLI commands for the hermes-seoaeogeo plugin — audit subcommand."""
 
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ def audit_url(
     # Action command for WordPress
     if mode == "full":
         typer.echo("")
-        typer.echo("💡 Next: run 'hermes seoaedgeo wp-fix apply-schema <url> --schema_type Article' to apply schema")
+        typer.echo("💡 Next: run 'hermes seoaeogeo wp-fix apply-schema <url> --schema_type Article' to apply schema")
 
 
 @audit_app.command("wordpress")

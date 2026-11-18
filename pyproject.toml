@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "hermes-seoaedgeo"
+name = "hermes-seoaeogeo"
 version = "1.0.0"
 requires-python = ">=3.11"
 description = "Advanced SEO, AEO, and GEO audit toolkit for Hermes Agent with native WordPress integration."
@@ -22,10 +22,10 @@ dependencies = [
 ]
 
 [project.scripts]
-seoaedgeo = "src.main:cli"
+seoaeogeo = "src.main:cli"
 
 [project.entry-points."hermes_agent.plugins"]
-hermes_seoaedgeo = "hermes_seoaedgeo:register"
+hermes_seoaeogeo = "hermes_seoaeogeo:register"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]

@@ -1,14 +1,14 @@
-# hermes-seoaedgeo
+# hermes-seoaeogeo
 
 **Advanced SEO / AEO / GEO Audit Toolkit for Hermes Agent** — with native WordPress schema automation.
 
-Built by **Hilaludin Wahid** · MIT License · [GitHub](https://github.com/hilaludin/hermes-seoaedgeo)
+Built by **Hilaludin Wahid** · MIT License · [GitHub](https://github.com/hilaludin/hermes-seoaeogeo)
 
 ---
 
 ## What is this?
 
-`hermes-seoaedgeo` is a Hermes Agent plugin that adds three powerful audit tools:
+`hermes-seoaeogeo` is a Hermes Agent plugin that adds three powerful audit tools:
 
 | Tool | Purpose |
 |------|---------|
@@ -26,17 +26,17 @@ Traditional SEO tools stop at meta tags and page speed. This toolkit also checks
 
 ```bash
 # Clone or link from your local workspace
-hermes plugin link . --source C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaedgeo
+hermes plugin link . --source C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaeogeo
 ```
 
 Or install standalone:
 
 ```bash
-cd C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaedgeo
+cd C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaeogeo
 pip install -e .
 ```
 
-Once linked inside Hermes Agent, the tools appear automatically in your agent's tool roster under the `seoaedgeo` set.
+Once linked inside Hermes Agent, the tools appear automatically in your agent's tool roster under the `seoaeogeo` set.
 
 ---
 
@@ -46,19 +46,19 @@ Run directly from the command line (no Hermes required):
 
 ```bash
 # Full audit
-seoaedgeo audit https://myleben.co.id/blog/post --mode full
+seoaeogeo audit https://myleben.co.id/blog/post --mode full
 
 # Technical-only audit
-seoaedgeo audit https://example.com --mode technical
+seoaeogeo audit https://example.com --mode technical
 
 # AEO PAA extraction
-seoaedgeo aeo extract-paa https://example.com/blog --limit 15
+seoaeogeo aeo extract-paa https://example.com/blog --limit 15
 
 # GEO citability analysis
-seoaedgeo geo citability https://example.com/article
+seoaeogeo geo citability https://example.com/article
 
 # WordPress schema generator
-seoaedgeo wp-fix apply-schema https://example.com/product --schema_type Article --output json
+seoaeogeo wp-fix apply-schema https://example.com/product --schema_type Article --output json
 ```
 
 ---
@@ -119,7 +119,7 @@ Observed via the Hermes hook system. Fires before every `seo_audit`, `wp_schema_
 ## Architecture
 
 ```
-hermes-seoaedgeo/
+hermes-seoaeogeo/
 ├── src/                          # Core Python package (runnable standalone)
 │   ├── main.py                   # Typer root CLI entry point
 │   ├── schemas.py                # Tool schemas (what the agent reads)
@@ -135,7 +135,7 @@ hermes-seoaedgeo/
 │   └── analyzers/                # Domain analyzers
 │       ├── aeo_analyzer.py       # Conversational query extraction
 │       └── geo_analyzer.py       # LLM citability scoring
-├── hermes_seoaedgeo/             # Hermes plugin package
+├── hermes_seoaeogeo/             # Hermes plugin package
 │   └── __init__.py               # Entry point (register function)
 ├── tests/                        # Test suite skeleton
 ├── plugin.yaml                   # Hermes manifest

@@ -1,12 +1,12 @@
-"""hermes-seoaedgeo — standalone CLI entry point.
+"""hermes-seoaeogeo — standalone CLI entry point.
 
-Run as `python -m src.main` or install the package to get the `seoaedgeo` command.
+Run as `python -m src.main` or install the package to get the `seoaeogeo` command.
 
 Examples:
-    seoaedgeo audit url <url> --mode full
-    seoaedgeo aeo extract-paa <url> --limit 15
-    seoaedgeo geo citability <url>
-    seoaedgeo wp-fix apply-schema <url> --schema_type Article
+    seoaeogeo audit url <url> --mode full
+    seoaeogeo aeo extract-paa <url> --limit 15
+    seoaeogeo geo citability <url>
+    seoaeogeo wp-fix apply-schema <url> --schema_type Article
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from src.commands.wp_fix import wp_app
 
 # Root CLI app
 cli = typer.Typer(
-    name="seoaedgeo",
+    name="seoaeogeo",
     help="Hermes SEO / AEO / GEO audit toolkit — technical SEO, answer engine optimization, "
          "generative engine optimization, and WordPress automation.",
 )
@@ -43,7 +43,7 @@ cli.add_typer(wp_app,    name="wp-fix", help="WordPress schema generation and RE
 
 
 def main() -> None:
-    """Entry point for the seoaedgeo CLI."""
+    """Entry point for the seoaeogeo CLI."""
     cli()
 
 

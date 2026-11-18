@@ -1,4 +1,4 @@
-"""hermes-seoaedgeo — advanced SEO, AEO, and GEO audit toolkit for Hermes Agent."""
+"""hermes-seoaeogeo — advanced SEO, AEO, and GEO audit toolkit for Hermes Agent."""
 
 from __future__ import annotations
 
@@ -16,6 +16,6 @@ def register(ctx=None):
 
     try:
         _register_all(ctx)
-        logger.info("hermes-seoaedgeo plugin loaded successfully")
+        logger.info("hermes-seoaeogeo plugin loaded successfully")
     except Exception as e:
-        logger.warning("hermes-seoaedgeo could not load: %s", e)
+        logger.warning("hermes-seoaeogeo could not load: %s", e)

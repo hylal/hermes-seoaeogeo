@@ -1,4 +1,4 @@
-"""CLI commands for the hermes-seoaedgeo plugin — geo subcommand."""
+"""CLI commands for the hermes-seoaeogeo plugin — geo subcommand."""
 
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ def citability_cmd(
 
     # Next step
     console.print("\n[bold]Next:[/bold]")
-    console.print("Run 'hermes seoaedgeo wp-fix apply-schema <url> -s Article' to generate schema code")
+    console.print("Run 'hermes seoaeogeo wp-fix apply-schema <url> -s Article' to generate schema code")
 
 
 if __name__ == "__main__":

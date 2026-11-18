@@ -1,4 +1,4 @@
-"""hermes-seoaedgeo — Advanced SEO, AEO, and GEO audit toolkit."""
+"""hermes-seoaeogeo — Advanced SEO, AEO, and GEO audit toolkit."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def register(ctx: object) -> None:
         from src.cli_hooks import on_pre_tool_call
     except ImportError as exc:
         logger.warning(
-            "hermes-seoaedgeo: could not import src modules — "
+            "hermes-seoaeogeo: could not import src modules — "
             "plugin tools will be unavailable. Check installation: %s",
             exc,
         )
@@ -40,21 +40,21 @@ def register(ctx: object) -> None:
     # Register Hermes tools
     ctx.register_tool(
         name="seo_audit",
-        toolset="seoaedgeo",
+        toolset="seoaeogeo",
         schema=SEOAUDIT_SCHEMA,
         handler=seo_audit_handler,
     )
 
     ctx.register_tool(
         name="wp_schema_apply",
-        toolset="seoaedgeo",
+        toolset="seoaeogeo",
         schema=WPSCHEMA_SCHEMA,
         handler=wp_schema_apply_handler,
     )
 
     ctx.register_tool(
         name="get_aeo_opportunities",
-        toolset="seoaedgeo",
+        toolset="seoaeogeo",
         schema=AEOPPA_SCHEMA,
         handler=get_aeo_opportunities_handler,
     )
@@ -63,8 +63,8 @@ def register(ctx: object) -> None:
     ctx.register_hook("pre_tool_call", on_pre_tool_call)
 
     logger.info(
-        "hermes-seoaedgeo: registered 3 tools + 1 hook "
+        "hermes-seoaeogeo: registered 3 tools + 1 hook "
         "(seo_audit, wp_schema_apply, get_aeo_opportunities, pre_tool_call)"
     )
 
-    logger.info("hermes-seoaedgeo plugin registered successfully")
+    logger.info("hermes-seoaeogeo plugin registered successfully")

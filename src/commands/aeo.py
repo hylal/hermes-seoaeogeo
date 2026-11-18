@@ -1,4 +1,4 @@
-"""CLI commands for the hermes-seoaedgeo plugin — aeo subcommand."""
+"""CLI commands for the hermes-seoaeogeo plugin — aeo subcommand."""
 
 from __future__ import annotations
 

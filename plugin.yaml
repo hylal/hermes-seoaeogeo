@@ -1,9 +1,9 @@
-name: hermes-seoaedgeo
+name: hermes-seoaeogeo
 version: 1.0.0
 description: Advanced SEO, AEO, and GEO audit toolkit for Hermes Agent with native WordPress integration.
 author: Hilaludin Wahid
 license: MIT
-homepage: https://github.com/hilaludin/hermes-seoaedgeo
+homepage: https://github.com/hilaludin/hermes-seoaeogeo
 tags: [seo, aeo, geo, wordpress, audit, marketing]
 provides_tools:
   - seo_audit

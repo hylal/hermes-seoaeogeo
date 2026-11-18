@@ -1,10 +1,10 @@
-"""Registration hub for the hermes-seoaedgeo plugin.
+"""Registration hub for the hermes-seoaeogeo plugin.
 
 Feeds the Hermes Agent plugin registry with tools and hooks so they appear in
 your agent's tool roster. The `register(ctx)` entry point is what Hermes calls
 when the plugin is linked.
 
-The CLI can also be used standalone: `python -m src.main` or the `seoaedgeo`
+The CLI can also be used standalone: `python -m src.main` or the `seoaeogeo`
 console script (when installed via `pip install -e .`).
 """
 
@@ -160,6 +160,6 @@ def register(ctx: Any | None = None) -> None:
                 except Exception as e:
                     logger.error("Failed to register hook %s: %s", hook_name, e)
     else:
-        logger.info("seoaedgeo plugin loaded standalone (no Hermes ctx)")
+        logger.info("seoaeogeo plugin loaded standalone (no Hermes ctx)")
 
     # TODO: register CLI commands via typer if ctx supports it (outside scope for v1)

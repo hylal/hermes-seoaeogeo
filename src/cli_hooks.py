@@ -24,7 +24,7 @@ def on_pre_tool_call(tool_name: str, args: dict, task_id: str, **_: any) -> None
     """
     if tool_name in ("seo_audit", "wp_schema_apply", "get_aeo_opportunities"):
         logger.info(
-            "seoaedgeo audit tool called: %s (url=%s)",
+            "seoaeogeo audit tool called: %s (url=%s)",
             tool_name,
             args.get("url", "unknown"),
             extra={"task_id": task_id},
