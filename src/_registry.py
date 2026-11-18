@@ -162,4 +162,6 @@ def register(ctx: Any | None = None) -> None:
     else:
         logger.info("seoaeogeo plugin loaded standalone (no Hermes ctx)")
 
-    # TODO: register CLI commands via typer if ctx supports it (outside scope for v1)
+    # NOTE: CLI commands are registered via src/main.py (typer). If Hermes ever
+    # exposes a CLI registration API, this is where we would call it. For now,
+    # the standalone CLI works independently of Hermes.

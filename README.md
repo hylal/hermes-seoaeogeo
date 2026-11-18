@@ -2,7 +2,7 @@
 
 **Advanced SEO / AEO / GEO Audit Toolkit for Hermes Agent** — with native WordPress schema automation.
 
-Built by **Hilaludin Wahid** · MIT License · [GitHub](https://github.com/hilaludin/hermes-seoaeogeo)
+Built by **Hilaludin Wahid** · MIT License · [GitHub](https://github.com/hylal/hermes-seoaeogeo)
 
 ---
 
