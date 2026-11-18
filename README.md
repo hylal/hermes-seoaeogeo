@@ -26,13 +26,13 @@ Traditional SEO tools stop at meta tags and page speed. This toolkit also checks
 
 ```bash
 # Clone or link from your local workspace
-hermes plugin link . --source C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaeogeo
+hermes plugin link . --source C:/Users/Digital-MKT/Documents/hermes-seoaeogeo
 ```
 
 Or install standalone:
 
 ```bash
-cd C:/Users/CSBHO-Digital-MKT/Documents/hermes-seoaeogeo
+cd C:/Users/Digital-MKT/Documents/hermes-seoaeogeo
 pip install -e .
 ```
 
@@ -46,7 +46,7 @@ Run directly from the command line (no Hermes required):
 
 ```bash
 # Full audit
-seoaeogeo audit https://myleben.co.id/blog/post --mode full
+seoaeogeo audit https://domain.co.id/blog/post --mode full
 
 # Technical-only audit
 seoaeogeo audit https://example.com --mode technical
