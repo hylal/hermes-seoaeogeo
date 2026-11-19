@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Optional
 
 
 class UrlCache:
@@ -20,7 +19,7 @@ class UrlCache:
         self._root.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------ public
-    def get(self, url: str, ttl: int = 300) -> Optional[dict]:
+    def get(self, url: str, ttl: int = 300) -> dict | None:
         """Return cached response dict or None if miss/expired."""
         key = self._key(url)
         fpath = self._root / key

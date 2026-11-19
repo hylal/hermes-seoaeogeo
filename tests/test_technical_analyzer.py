@@ -20,6 +20,9 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         from bs4 import BeautifulSoup
         return BeautifulSoup(html, "html.parser")
 
+    def _make_analyzer(self):
+        return TechnicalAnalyzer(use_cache=False)
+
     # ------------------------------------------------------------------ protocol
     def test_https_url_is_ok(self):
         with patch("src.analyzers.technical_analyzer.requests.get") as mock_get:
@@ -29,7 +32,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head><title>Test</title></head><body></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com/page")
+            result = self._make_analyzer().audit("https://example.com/page")
             protocols = [c for c in result["checks"] if c["check"] == "Protocol"]
             self.assertEqual(len(protocols), 1)
             self.assertEqual(protocols[0]["status"], "ok")
@@ -42,7 +45,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head><title>Test</title></head><body></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("http://example.com/page")
+            result = self._make_analyzer().audit("https://example.com/page")
             protocols = [c for c in result["checks"] if c["check"] == "Protocol"]
             self.assertEqual(len(protocols), 1)
             self.assertEqual(protocols[0]["status"], "error")
@@ -56,7 +59,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = "<html><body>No title here</body></html>"
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = self._make_analyzer().audit("https://example.com")
             titles = [c for c in result["checks"] if c["check"] == "Title Tag"]
             self.assertEqual(titles[0]["status"], "error")
 
@@ -68,7 +71,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head><title>Hi</title></head><body></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = self._make_analyzer().audit("https://example.com")
             titles = [c for c in result["checks"] if c["check"] == "Title Tag"]
             self.assertEqual(titles[0]["status"], "warn")
 
@@ -80,7 +83,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head><title>This is a good title between thirty and sixty chars</title></head><body></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = self._make_analyzer().audit("https://example.com")
             titles = [c for c in result["checks"] if c["check"] == "Title Tag"]
             self.assertEqual(titles[0]["status"], "ok")
 
@@ -93,7 +96,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head></head><body><h1>Hello</h1><p>Body</p></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             h1_checks = [c for c in result["checks"] if c["check"] == "H1 Count"]
             self.assertEqual(h1_checks[0]["status"], "ok")
 
@@ -105,7 +108,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<html><head></head><body><p>No heading at all</p></body></html>'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             h1_checks = [c for c in result["checks"] if c["check"] == "H1 Count"]
             self.assertEqual(h1_checks[0]["status"], "error")
 
@@ -121,7 +124,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = html
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             img_checks = [c for c in result["checks"] if c["check"] == "Image Alt"]
             self.assertEqual(img_checks[0]["status"], "warn")
 
@@ -136,7 +139,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = html
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             img_checks = [c for c in result["checks"] if c["check"] == "Image Alt"]
             self.assertEqual(img_checks[0]["status"], "ok")
 
@@ -152,7 +155,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = html
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             sd_checks = [c for c in result["checks"] if c["check"] == "Structured Data"]
             self.assertEqual(sd_checks[0]["status"], "ok")
             self.assertEqual(result["details"]["structured_data_ld"], 1)
@@ -165,7 +168,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = "<html><body>No schema here</body></html>"
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             sd_checks = [c for c in result["checks"] if c["check"] == "Structured Data"]
             self.assertEqual(sd_checks[0]["status"], "warn")
 
@@ -178,7 +181,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             mock_resp.text = '<meta name="robots" content="noindex, nofollow">'
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             rb = [c for c in result["checks"] if c["check"] == "Robots Meta"]
             self.assertEqual(rb[0]["status"], "error")
 
@@ -206,17 +209,16 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             '''.strip()
             mock_get.return_value = mock_resp
 
-            result = TechnicalAnalyzer().audit("https://example.com")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://example.com")
             score = result["score"]
             self.assertGreaterEqual(score, 0)
             self.assertLessEqual(score, 100)
             self.assertIsInstance(score, int)
 
     def test_fetch_failure_returns_zero(self):
-        import requests as req_mod
         # Mock requests.get to directly return None (fetch failure) without raising
         with patch("src.analyzers.technical_analyzer._safe_get", return_value=None):
-            result = TechnicalAnalyzer().audit("https://nonexistent.example.invalid")
+            result = TechnicalAnalyzer(use_cache=False).audit("https://nonexistent.example.invalid")
             self.assertEqual(result["score"], 0)
             self.assertTrue(any(c["status"] == "error" for c in result["checks"]))
 

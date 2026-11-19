@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import re
-import urllib.parse
-from typing import Any, List, Tuple
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -30,7 +29,7 @@ class AEOAnalyzer:
         self.api_key = api_key
         self.use_api = use_api
 
-    def extract_paa_opportunities(self, url: str) -> List[dict[str, Any]]:
+    def extract_paa_opportunities(self, url: str) -> list[dict[str, Any]]:
         """Identify conversational queries and suggest Q&A schema additions.
 
         Args:

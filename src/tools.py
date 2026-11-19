@@ -8,10 +8,9 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
-from bs4 import BeautifulSoup
 
 from src.models import AuditResult
 
@@ -61,6 +60,8 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
             _tech_out = _tech.audit(url)
             tech_score = _tech_out["score"]
             tech_items = len(_tech_out["checks"])
+            # Reuse raw HTML for other analyzers to avoid double-fetch
+            _html = _tech_out.get("details", {}).get("_raw_html")
 
         if mode in ("full", "aeo"):
             try:
@@ -71,9 +72,13 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
                 aeo_score = 0
 
         if mode in ("full", "geo"):
-            # Use a sample HTML for the GEO demo analysis
-            sample_html = _sample_content_html()
-            geo_result = geo.evaluate_llm_citability(sample_html)
+            if _html is not None:
+                geo_result = geo.evaluate_llm_citability(_html)
+            else:
+                # Fallback: re-fetch for GEO-only mode (technical didn't run)
+                _resp = _safe_get_for_geo(url)
+                _html = _resp.text if _resp is not None else _sample_content_html()
+                geo_result = geo.evaluate_llm_citability(_html)
             geo_score = geo_result["citability_score"]
 
         result = AuditResult(
@@ -91,7 +96,7 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
             errors=[],
         )
 
-        return json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
+        return json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False)
 
     except Exception as e:
         logger.exception("SEO audit failed for %s", url)
@@ -105,7 +110,7 @@ def seo_audit_handler(args: dict[str, Any], **_: Any) -> str:
             recommendations=[],
             errors=[str(e)],
         )
-        return json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
+        return json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +131,7 @@ def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
     """
     url = args.get("url", "")
     schema_type = args.get("schema_type", "Article")
-    output = args.get("output", "json")
+    args.get("output", "json")
     push_live = bool(args.get("push_live", False))
 
     if not url:
@@ -135,8 +140,24 @@ def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
     if not re.match(r"^https?://", url):
         url = "https://" + url
 
-    # Build schema
-    schema = _build_schema(schema_type, url)
+    # Build schema (with optional live metadata extraction)
+    html_for_meta: str | None = None
+    if push_live:
+        # Fetch once for metadata when we might do a live push
+        import requests as _req
+        try:
+            _r = _req.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            html_for_meta = _r.text
+        except Exception:
+            pass
+    else:
+        from src.analyzers.technical_analyzer import _safe_get
+        _resp = _safe_get(url, timeout=10)
+        if _resp is not None:
+            html_for_meta = _resp.text
+
+    extracted_meta = _extract_metadata_from_html(html_for_meta, url) if html_for_meta else {}
+    schema = _build_schema(schema_type, url, metadata=extracted_meta)
     json_ld = json.dumps(schema, indent=2, ensure_ascii=False)
 
     # WP-CLI reference
@@ -158,7 +179,7 @@ def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
 
     # Live push when env is configured and requested
     if push_live:
-        from src.config import wp_url, wp_username, wp_password, wp_rest_endpoint
+        from src.config import wp_password, wp_rest_endpoint, wp_url, wp_username
         wp_base = wp_url()
         wp_user = wp_username()
         wp_pass = wp_password()
@@ -175,7 +196,6 @@ def wp_schema_apply_handler(args: dict[str, Any], **_: Any) -> str:
                 auth_header = _b64.b64encode(f"{wp_user}:{wp_pass}".encode()).decode()
                 post_id = args.get("post_id")
                 endpoint = wp_rest_endpoint("/posts")
-                method = "PUT"
                 body = {
                     **payload,
                     "id": int(post_id) if post_id else None,
@@ -258,6 +278,12 @@ def get_aeo_opportunities_handler(args: dict[str, Any], **_: Any) -> str:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _safe_get_for_geo(url: str, timeout: int = 15) -> requests.Response | None:
+    """Fetch a URL for GEO analysis. Returns None on failure."""
+    from src.analyzers.technical_analyzer import _safe_get
+    return _safe_get(url, timeout=timeout)
+
+
 def _sample_content_html() -> str:
     """Return a small representative HTML sample for GEO demo analysis."""
     return """
@@ -284,36 +310,54 @@ def _sample_content_html() -> str:
     """
 
 
-def _build_schema(schema_type: str, url: str) -> dict[str, Any]:
+def _build_schema(schema_type: str, url: str, *, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build a JSON-LD schema dict for the given type.
 
     Args:
         schema_type: One of Article, FAQPage, HowTo, LocalBusiness, Product.
         url: Target page URL.
+        metadata: Optional dict with extracted page metadata (title, description,
+                  author, image, date). When provided, values are used instead of
+                  placeholder defaults. Keys: title, description, author_name,
+                  author_url, image, date_published.
 
     Returns:
         Dict ready for JSON-LD serialization.
     """
+    # Defaults used when metadata is not available
+    meta = {
+        "title": "How to Optimize Your Site for AEO, GEO, and Search",
+        "description": "A practical guide to technical SEO, answer engine optimization, and generative engine optimization.",
+        "author_name": "Hilaludin Wahid",
+        "author_url": "https://myleben.co.id/about",
+        "image": "https://myleben.co.id/og-image.jpg",
+        "date": "2026-11-18",
+    }
+    if metadata:
+        for key, val in metadata.items():
+            if val:
+                meta[key] = val
+
     if schema_type == "Article":
         return {
             "@context": "https://schema.org",
             "@type": "Article",
-            "headline": "How to Optimize Your Site for AEO, GEO, and Search",
-            "description": "A practical guide to technical SEO, answer engine optimization, and generative engine optimization.",
+            "headline": meta["title"],
+            "description": meta["description"],
             "author": {
                 "@type": "Person",
-                "name": "Hilaludin Wahid",
-                "url": "https://myleben.co.id/about",
+                "name": meta["author_name"],
+                "url": meta["author_url"],
             },
-            "datePublished": "2026-11-18",
-            "dateModified": "2026-11-18",
+            "datePublished": meta["date"],
+            "dateModified": meta["date"],
             "mainEntityOfPage": {"@type": "WebPage", "identifier": url},
             "publisher": {
                 "@type": "Organization",
                 "name": "Atria Furniture",
                 "logo": {"@type": "ImageObject", "url": "https://myleben.co.id/logo.png"},
             },
-            "image": "https://myleben.co.id/og-image.jpg",
+            "image": meta["image"],
         }
 
     if schema_type == "FAQPage":
@@ -389,13 +433,70 @@ def _build_schema(schema_type: str, url: str) -> dict[str, Any]:
             "price": "1250000",
             "priceCurrency": "IDR",
             "availability": "https://schema.org/InStock",
-            "image": "https://myleben.co.id/charts/atria-chair-product.jpg",
+            "image": meta["image"],
         }
 
     # Fallback
     return {
         "@context": "https://schema.org",
         "@type": schema_type,
-        "name": "Auto-generated schema",
-        "description": "Generated by hermes-seoaeogeo",
+        "name": meta["title"],
+        "description": meta["description"],
     }
+
+
+def _extract_metadata_from_html(html: str, url: str) -> dict[str, Any]:
+    """Extract page metadata (title, description, author, image, date) from HTML.
+
+    Uses Open Graph tags, meta description, and JSON-LD when available.
+    Returns a dict with keys: title, description, author_name, author_url,
+    image, date_published. Empty string when not found.
+    """
+    from bs4 import BeautifulSoup as _BS4
+    meta: dict[str, Any] = {}
+    try:
+        soup = _BS4(html, "html.parser")
+        # Title
+        t = soup.find("title")
+        meta["title"] = t.string.strip() if t and t.string else ""
+
+        # Meta description
+        d = soup.find("meta", attrs={"name": "description"})
+        meta["description"] = d["content"].strip() if d and d.get("content") else ""
+
+        # Open Graph image
+        og_img = soup.find("meta", property="og:image")
+        meta["image"] = og_img["content"].strip() if og_img and og_img.get("content") else ""
+
+        # Author from JSON-LD
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                import json as _json
+                data = _json.loads(script.string or "")
+                if isinstance(data, dict):
+                    author = data.get("author")
+                    if isinstance(author, dict) and author.get("name"):
+                        meta["author_name"] = author["name"]
+                        meta["author_url"] = author.get("url", "")
+                    elif isinstance(author, list) and author and isinstance(author[0], dict):
+                        meta["author_name"] = author[0].get("name", "")
+                        meta["author_url"] = author[0].get("url", "")
+                    # Date published
+                    dp = data.get("datePublished") or data.get("dateModified")
+                    if dp:
+                        meta["date"] = str(dp)[:10]
+                    # Image
+                    img = data.get("image")
+                    if img:
+                        if isinstance(img, list) and img:
+                            meta["image"] = str(img[0])
+                        elif isinstance(img, dict) and img.get("url"):
+                            meta["image"] = img["url"]
+                        else:
+                            meta["image"] = str(img)
+                break  # only first JSON-LD block
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return meta

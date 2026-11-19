@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import logging
 import json
-from typing import Optional
+import logging
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 
 logger = logging.getLogger(__name__)
 console = Console()

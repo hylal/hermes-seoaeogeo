@@ -18,17 +18,17 @@ if str(_src_dir) not in sys.path:
 def register(ctx: object) -> None:
     """Register all tools, hooks, and CLI commands for this plugin."""
     try:
+        from src.cli_hooks import on_pre_tool_call
         from src.schemas import (
+            AEOPPA_SCHEMA,
             SEOAUDIT_SCHEMA,
             WPSCHEMA_SCHEMA,
-            AEOPPA_SCHEMA,
         )
         from src.tools import (
+            get_aeo_opportunities_handler,
             seo_audit_handler,
             wp_schema_apply_handler,
-            get_aeo_opportunities_handler,
         )
-        from src.cli_hooks import on_pre_tool_call
     except ImportError as exc:
         logger.warning(
             "hermes-seoaeogeo: could not import src modules — "

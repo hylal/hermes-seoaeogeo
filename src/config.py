@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
 
 def get_env(key: str, default: str = "") -> str:

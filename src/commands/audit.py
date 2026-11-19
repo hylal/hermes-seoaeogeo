@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -29,8 +27,8 @@ def audit_url(
     ),
 ) -> None:
     """Run an SEO/AEO/GEO audit against the given URL."""
-    from src.analyzers.geo_analyzer import GEOAnalyzer
     from src.analyzers.aeo_analyzer import AEOAnalyzer
+    from src.analyzers.geo_analyzer import GEOAnalyzer
     from src.models import AuditResult
 
     console.print(
@@ -210,7 +208,7 @@ def wp_scan_cmd(
 
     # Summary
     if fingerprint["status"] == "wordpress_detected":
-        console.print(f"\n[bold green]✓ WordPress detected[/bold green]")
+        console.print("\n[bold green]✓ WordPress detected[/bold green]")
         console.print(f"[dim]Version:[/dim] {fingerprint['wp_version'] or 'unknown'}")
         if fingerprint["plugins"]:
             console.print(f"[dim]Plugins:[/dim] {', '.join(fingerprint['plugins'][:5])}")

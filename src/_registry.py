@@ -11,13 +11,13 @@ console script (when installed via `pip install -e .`).
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 # Lazy imports so the plugin loads even without Hermes installed
 logger = logging.getLogger(__name__)
 
 # Tool schemas (what the agent reads to decide when to call tools)
-TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
+TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
     "seo_audit": {
         "name": "seo_audit",
         "description": (
@@ -101,12 +101,12 @@ TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
 }
 
 # Hook registration
-HOOKS: Dict[str, callable] = {
+HOOKS: dict[str, callable] = {
     "pre_tool_call": None,  # lazy import
 }
 
 # Tool implementations (the code that runs when the LLM calls the tool)
-TOOL_HANDLERS: Dict[str, callable] = {
+TOOL_HANDLERS: dict[str, callable] = {
     "seo_audit": None,  # lazy import from src.tools
     "wp_schema_apply": None,
     "get_aeo_opportunities": None,
@@ -116,9 +116,9 @@ TOOL_HANDLERS: Dict[str, callable] = {
 def _import_tools_handlers() -> None:
     """Import tool handlers lazily so the plugin works without Hermes installed."""
     from src.tools import (
+        get_aeo_opportunities_handler,
         seo_audit_handler,
         wp_schema_apply_handler,
-        get_aeo_opportunities_handler,
     )
     TOOL_HANDLERS["seo_audit"] = seo_audit_handler
     TOOL_HANDLERS["wp_schema_apply"] = wp_schema_apply_handler

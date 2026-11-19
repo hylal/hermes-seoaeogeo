@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import re
-import ssl
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -62,34 +61,47 @@ class TechnicalAnalyzer:
         self.cache_ttl = cache_ttl
         self._cache = None
         if use_cache:
-            from src.config import ensure_cache_dir
             from src.cache import UrlCache
+            from src.config import ensure_cache_dir
             self._cache = UrlCache(ensure_cache_dir())
 
     # ------------------------------------------------------------------ public
-    def audit(self, url: str) -> dict[str, Any]:
-        """Run full technical audit against *url*. Returns checklist + score."""
-        # Check cache first
-        if self._cache is not None:
+    def audit(self, url: str, *, html: str | None = None) -> dict[str, Any]:
+        """Run full technical audit against *url*. Returns checklist + score.
+
+        Args:
+            url: Page URL to audit.
+            html: Optional pre-fetched HTML. When provided, skips the network fetch
+                  and parses directly from this string (avoids double-fetching when
+                  called alongside other analyzers that also need the raw content).
+        """
+        # Check cache first (only when doing a real fetch)
+        if self._cache is not None and html is None:
             cached = self._cache.get(url, ttl=self.cache_ttl)
             if cached is not None:
                 return cached
 
-        resp = _safe_get(url, timeout=self.timeout)
-        if resp is None:
-            result = {
-                "score": 0,
-                "checks": [self._check("Fetch", f"Could not reach {url}", self.STATUS_ERROR)],
-                "details": {"final_url": url, "http_code": None},
-            }
-            if self._cache is not None:
-                self._cache.put(url, result)
-            return result
+        if html is None:
+            resp = _safe_get(url, timeout=self.timeout)
+            if resp is None:
+                result = {
+                    "score": 0,
+                    "checks": [self._check("Fetch", f"Could not reach {url}", self.STATUS_ERROR)],
+                    "details": {"final_url": url, "http_code": None},
+                }
+                if self._cache is not None:
+                    self._cache.put(url, result)
+                return result
 
-        final_url = resp.url
-        http_code = resp.status_code
-        soup = BeautifulSoup(resp.text, "html.parser")
-        raw_html = resp.text
+            final_url = resp.url
+            http_code = resp.status_code
+            soup = BeautifulSoup(resp.text, "html.parser")
+            raw_html = resp.text
+        else:
+            final_url = url
+            http_code = 200
+            soup = BeautifulSoup(html, "html.parser")
+            raw_html = html
 
         checks: list[dict[str, Any]] = []
         details: dict[str, Any] = {"final_url": final_url, "http_code": http_code}
@@ -192,7 +204,7 @@ class TechnicalAnalyzer:
             details["canonical"] = None
 
         # 9. Open Graph tags
-        og_tags = soup.find_all("meta", attrs={"property": re.compile(r"^og:", re.I)})
+        og_tags = soup.find_all("meta", attrs={"property": re.compile(r"^og:", re.IGNORECASE)})
         og_props = ["og:title", "og:description", "og:image", "og:url"]
         found_og = [prop for prop in og_props if any(m.get("property","").lower()==prop for m in og_tags)]
         if len(found_og) == 4:
@@ -294,6 +306,7 @@ class TechnicalAnalyzer:
 
         final_score = round(earned / total_weight * 100)
         details["score_breakdown"] = score_details
+        details["_raw_html"] = raw_html  # expose for reuse by other analyzers
         result = {"score": final_score, "checks": checks, "details": details}
         if self._cache is not None:
             self._cache.put(final_url or url, result)

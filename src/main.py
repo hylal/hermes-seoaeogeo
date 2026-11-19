@@ -11,7 +11,6 @@ Examples:
 
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 
@@ -23,8 +22,8 @@ if str(_src_dir) not in sys.path:
 
 import typer
 
-from src.commands.audit import audit_app
 from src.commands.aeo import aeo_app
+from src.commands.audit import audit_app
 from src.commands.geo import geo_app
 from src.commands.wp_fix import wp_app
 

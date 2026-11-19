@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ class AuditResult(BaseModel):
 
     url: str
     mode: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     overall_score: int = Field(default=0, ge=0, le=100)
     technical: dict[str, Any] = Field(default_factory=dict)
     aeo: dict[str, Any] = Field(default_factory=dict)
